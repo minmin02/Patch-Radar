@@ -60,7 +60,7 @@ class CollectorIntegrationTest {
 
     @Test
     void parsedSampleRoundTrip() throws Exception {
-        var releases = Parser.rss("jenkins", Files.readString(Path.of("src/test/resources/feeds/jenkins.xml")));
+        var releases = Parser.rss("jenkins", Files.readAllBytes(Path.of("src/test/resources/feeds/jenkins.xml")));
         assertThat(collector.publishChanged(releases)).isLessThanOrEqualTo(releases.size());
         // 실제 피드 키가 이력에 남지 않게 정리
         releases.forEach(r -> db.sql("delete from published_release where tool = ? and release_key = ?")

@@ -1,7 +1,6 @@
 package io.patchradar.collector.source;
 
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -76,11 +75,11 @@ public final class Parser {
         return out;
     }
 
-    public static List<Release> rss(String tool, String xml) throws Exception {
+    public static List<Release> rss(String tool, byte[] xml) throws Exception {
         var f = DocumentBuilderFactory.newInstance();
         f.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        var doc = f.newDocumentBuilder().parse(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        var doc = f.newDocumentBuilder().parse(new ByteArrayInputStream(xml));
         List<Release> out = new ArrayList<>();
         // RSS(item)와 Atom(entry) 모두 처리
         for (String tagName : new String[] {"item", "entry"}) {

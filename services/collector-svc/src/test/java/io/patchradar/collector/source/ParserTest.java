@@ -47,7 +47,7 @@ class ParserTest {
 
     @Test
     void gitlabAtomHighestVersionAndSecurity() throws Exception {
-        List<Release> r = Parser.rss("gitlab", feed("gitlab.xml"));
+        List<Release> r = Parser.rss("gitlab", Files.readAllBytes(Path.of("src/test/resources/feeds/gitlab.xml")));
         assertThat(r).hasSize(5);
         Release first = r.get(0);
         assertThat(first.title()).isEqualTo("GitLab Patch Release: 19.5.5, 19.4.7");
@@ -60,7 +60,7 @@ class ParserTest {
 
     @Test
     void jenkinsRssOnlyVersionTitles() throws Exception {
-        List<Release> r = Parser.rss("jenkins", feed("jenkins.xml"));
+        List<Release> r = Parser.rss("jenkins", Files.readAllBytes(Path.of("src/test/resources/feeds/jenkins.xml")));
         assertThat(r).extracting(Release::title).containsExactly("Jenkins 2.580.2", "Jenkins 2.580.1", "Jenkins 2.568.3");
         assertThat(r.get(0).version()).isEqualTo("2.580.2");
         assertThat(r.get(0).security()).isTrue();
@@ -119,8 +119,20 @@ class ParserTest {
                 <item><title>A 1.0</title><link>https://e.com/a</link><pubDate>nope</pubDate></item>
                 <item><title>B 1.1</title><link>https://e.com/b</link><pubDate>Mon, 05 Jan 2026 10:00:00 GMT</pubDate></item>
                 </channel></rss>""";
-        List<Release> r = Parser.rss("gitlab", xml);
+        List<Release> r = Parser.rss("gitlab", xml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         assertThat(r).hasSize(1);
         assertThat(r.get(0).title()).isEqualTo("B 1.1");
+    }
+
+    @Test
+    void rssAndAtomDecodeUtf8Bytes() throws Exception {
+        String rss = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss><channel><item><title>A 1.0 eMudhra\u2019s caf\u00e9 \ud55c\uae00</title>"
+                + "<link>https://e.com/a</link><pubDate>Mon, 05 Jan 2026 10:00:00 GMT</pubDate></item></channel></rss>";
+        String atom = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><feed><entry><title>B 1.1 eMudhra\u2019s caf\u00e9 \ud55c\uae00</title>"
+                + "<link href=\"https://e.com/b\"/><updated>2026-01-05T10:00:00Z</updated></entry></feed>";
+        for (String xml : new String[] {rss, atom}) {
+            List<Release> r = Parser.rss("gitlab", xml.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            assertThat(r.get(0).title()).endsWith("eMudhra\u2019s caf\u00e9 \ud55c\uae00");
+        }
     }
 }

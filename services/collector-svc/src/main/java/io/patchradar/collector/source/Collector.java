@@ -1,6 +1,7 @@
 package io.patchradar.collector.source;
 
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.security.MessageDigest;
 import java.util.HexFormat;
@@ -79,11 +80,11 @@ public class Collector {
                         h.set(HttpHeaders.IF_MODIFIED_SINCE, state[1]);
                     }
                 })
-                .retrieve().toEntity(String.class);
+                .retrieve().toEntity(byte[].class);
         if (res.getStatusCode().isSameCodeAs(HttpStatus.NOT_MODIFIED)) {
             return;
         }
-        List<Release> releases = gh ? Parser.github(s.tool(), res.getBody()) : Parser.rss(s.tool(), res.getBody());
+        List<Release> releases = gh ? Parser.github(s.tool(), new String(res.getBody(), StandardCharsets.UTF_8)) : Parser.rss(s.tool(), res.getBody());
         int n = publishChanged(releases);
         db.sql("""
                 insert into fetch_state (tool, etag, last_modified, checked_at) values (?, ?, ?, now())
