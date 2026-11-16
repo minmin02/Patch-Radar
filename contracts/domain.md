@@ -43,8 +43,21 @@
 - **rss 소스**:
   - `jenkins`는 제목이 `Jenkins <버전>`인 항목만 수집한다.
   - `gitlab`은 모든 항목을 수집한다.
-- **보안 판정**: 제목이나 본문에 `security`, `critical`, `CVE-`가 있으면 `security=true`로 표시한다(대소문자 무시).
+- **보안 판정**: 다음 중 하나라도 맞으면 `security=true`로 표시한다(모두 대소문자 무시). 어느 것도 맞지 않으면 `false`다.
+  - 제목에 `security` 또는 `critical`이 있다.
+  - 본문에 CVE ID가 있다. 정규식 `CVE-\d{4}-\d{4,}`.
+  - 본문에 보안 섹션이나 라벨이 있다. HTML 태그를 제거한 본문을 줄 단위로 보고, 줄 시작(앞 공백, 마크다운 `#`, 목록 기호 `-`/`*`는 건너뛴다)에 `security`로 시작하는 단어가 오는 줄 중에서 다음 경우만 해당한다. ① 제목 줄(`#`로 시작): 그 뒤로 단어만 이어지다가 줄 끝 또는 `:`로 끝남(예: `## Security`, `### Security Fixes`). ② 그 외 줄: 그 뒤로 단어만 이어지다가 `:`로 끝나는 라벨(예: `Security:`, `- Security fixes:`). 태그 제거 시 블록 태그(`p`, `li`, `br`, `h1`~`h6`, `div`, `tr`)는 줄바꿈, 그 외 인라인 태그는 공백으로 바꾼다. 예: `## Security`, `### Security Fixes`, `Security:`(Jenkins 변경 로그 라벨).
+  - 문장 중간의 `security` 단어(예: GitLab 공지의 "does not include any security fixes")나 본문의 `critical`은 판정에 쓰지 않는다.
+- **항목 검증**: `url`이 `http://` 또는 `https://`로 시작하지 않으면 그 항목만 건너뛴다.
+- **텍스트 정리**: 제목과 본문에서 NUL 문자(`\u0000`)를 제거한다. PostgreSQL `TEXT`에 저장할 수 없기 때문이다.
+- **항목 단위 격리**: 한 항목의 파싱이 실패하면(날짜 등) 그 항목만 건너뛰고 로그를 남긴다. 소스 전체를 실패로 처리하지 않는다.
 - **폴링**:
   - 기본 10분 주기로 돌고, `ETag`나 `Last-Modified`로 조건부 요청을 보낸다.
   - github는 `GITHUB_TOKEN`이 있으면 인증 헤더를 붙인다.
+  - HTTP 연결 타임아웃은 10초, 읽기 타임아웃은 30초다.
 - **첫 수집**: 소스마다 최근 릴리스(github 한 페이지 기준 30건)를 모두 발행한다. 화면을 처음부터 채우기 위해서다.
+
+## 이벤트 전달 (Redis Streams)
+
+- `release.detected`: collector-svc 발행, release-svc가 consumer group `release-svc`로 소비.
+- `release.detected.dead`: release-svc가 영구 오류로 5회 실패한 메시지를 옮기는 곳. 필드 `payload`, `originalId`, `error`. 자동 재처리는 하지 않는다.
