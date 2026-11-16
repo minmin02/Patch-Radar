@@ -55,7 +55,8 @@ services:
     environment:
       <<: *db-env
       RELEASE_API_URL: http://release-svc:8080
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}   # .env에서 읽음. 없으면 요약만 503
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}   # .env에서 읽음. 없으면 요약만 503
+      GEMINI_MODEL: ${GEMINI_MODEL:-}       # 비우면 서비스 기본 모델
     ports: ["8082:8082"]
     depends_on:
       postgres: { condition: service_healthy }

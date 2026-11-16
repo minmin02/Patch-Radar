@@ -286,7 +286,7 @@ function SummaryCard({ id }: { id: number }) {
     <section className="summary" aria-label="핵심요약">
       <h3>핵심요약</h3>
       <div className="body" dangerouslySetInnerHTML={{ __html: html }} />
-      <small>Claude({sum.model})로 생성 · AI 요약은 틀릴 수 있으니 원문을 확인하세요 · <time dateTime={sum.createdAt}>{new Date(sum.createdAt).toLocaleString('ko-KR')}</time></small>
+      <small>AI({sum.model})로 생성 · AI 요약은 틀릴 수 있으니 원문을 확인하세요 · <time dateTime={sum.createdAt}>{new Date(sum.createdAt).toLocaleString('ko-KR')}</time></small>
     </section>
   )
 }
