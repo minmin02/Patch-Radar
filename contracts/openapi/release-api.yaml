@@ -66,7 +66,7 @@ paths:
     get:
       summary: 캐시된 요약 조회 (LLM 호출 없음)
       description: >-
-        현재 릴리스 내용(content_hash)에 대한 캐시된 요약이 있으면 200.
+        현재 릴리스 내용(content_hash)과 현재 prompt_version에 대한 캐시된 요약이 있으면 200.
         릴리스가 없으면 404 `NOT_FOUND`, 릴리스는 있지만 요약이 없으면 404 `SUMMARY_NOT_FOUND`.
         release-svc 조회가 실패하면 502 `LLM_FAILED`.
       operationId: getSummary
