@@ -35,6 +35,8 @@ header p { margin: 0 0 12px; color: var(--muted); }
 .item:hover, .item[aria-current='true'] { background: var(--card); }
 .tool { font-weight: 600; }
 .ver { overflow-wrap: anywhere; }
+.vers { flex-basis: 100%; color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+.vers .hit { color: var(--fg); font-weight: 700; background: var(--flash); border-radius: 3px; padding: 0 3px; }
 .item time { margin-left: auto; color: var(--muted); font-size: .85rem; }
 .badge { padding: 0 6px; border-radius: 4px; background: var(--danger); color: #fff; font-size: .75rem; }
 .more { display: block; margin: 12px auto; padding: 6px 16px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); cursor: pointer; }

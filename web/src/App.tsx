@@ -73,6 +73,25 @@ function matches(r: ReleaseSummary, f: ReleaseQuery) {
   return true
 }
 
+// 한 공지에 여러 버전이 든 제목(예: "... Patch Release: 19.5.1, 19.4.3")에서 버전을 원문 순서대로 추출
+const versionsIn = (title: string) => [...new Set(title.match(/\d+(?:\.\d+){1,3}(?:\+[\w.]+)?/g) ?? [])]
+
+function Versions({ title, q }: { title: string; q: string }) {
+  const vs = versionsIn(title)
+  if (vs.length < 2) return null
+  const needle = q.toLowerCase()
+  return (
+    <span className="vers" aria-label="포함된 버전">
+      {vs.map((v, i) => (
+        <span key={v}>
+          {i > 0 && ' · '}
+          <span className={needle && v.toLowerCase().includes(needle) ? 'hit' : undefined}>{v}</span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
 export default function App() {
   const [filter, setFilter] = useState(readUrl)
   const [qInput, setQInput] = useState(filter.q)
@@ -202,7 +221,7 @@ export default function App() {
       </section>
 
       <form className="filters" role="search" onSubmit={(e) => e.preventDefault()}>
-        <label>검색<input type="search" maxLength={100} value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder="제목·본문" /></label>
+        <label>검색<input type="search" maxLength={100} value={qInput} onChange={(e) => setQInput(e.target.value)} placeholder="영문 키워드·버전으로 검색 (예: security, CVE, 18.11)" /></label>
         <label>시작일<input type="date" value={filter.from} max={filter.to || undefined} onChange={(e) => changeFilter({ from: e.target.value })} /></label>
         <label>종료일<input type="date" value={filter.to} min={filter.from || undefined} onChange={(e) => changeFilter({ to: e.target.value })} /></label>
         <label className="check"><input type="checkbox" checked={filter.security} onChange={(e) => changeFilter({ security: e.target.checked })} />보안 관련만</label>
@@ -219,6 +238,7 @@ export default function App() {
                   <span className="tool">{toolName.get(r.tool) ?? r.tool}</span>
                   <span className="ver">{r.version ?? r.title}</span>
                   {r.security && <span className="badge">보안</span>}
+                  <Versions title={r.title} q={filter.q} />
                   <time dateTime={r.publishedAt} title={new Date(r.publishedAt).toLocaleString('ko-KR')}>{relTime(r.publishedAt)}</time>
                 </button>
               </li>
@@ -229,7 +249,7 @@ export default function App() {
             <button type="button" className="more" onClick={() => setPage(page + 1)}>더 보기 ({items.length}/{total})</button>
           )}
         </section>
-        {selected !== null && <Detail key={selected} id={selected} onClose={() => setSelected(null)} />}
+        {selected !== null && <Detail key={selected} id={selected} q={filter.q} onClose={() => setSelected(null)} />}
       </div>
     </div>
   )
@@ -292,7 +312,7 @@ function SummaryCard({ id }: { id: number }) {
   )
 }
 
-function Detail({ id, onClose }: { id: number; onClose: () => void }) {
+function Detail({ id, q, onClose }: { id: number; q: string; onClose: () => void }) {
   const [rel, setRel] = useState<Release | null>(null)
   const [error, setError] = useState('')
 
@@ -316,6 +336,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
       {rel && (
         <>
           <h2>{rel.title}</h2>
+          <p><Versions title={rel.title} q={q} /></p>
           <p>{isHttp(rel.url)
             ? <a href={rel.url} target="_blank" rel="noopener noreferrer">원문 보기 ↗</a>
             : <span>{rel.url}</span>}</p>
