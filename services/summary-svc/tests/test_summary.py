@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import httpx
 import psycopg
 import pytest
+from google.genai import errors, types
 from fastapi.testclient import TestClient
 
 from app import main
@@ -14,20 +15,30 @@ RELEASES: dict[int, dict] = {}
 
 
 class FakeLLM:
-    def __init__(self, stop_reason="end_turn", delay=0.0):
-        self.calls = []
-        self.stop_reason = stop_reason
-        self.delay = delay
-        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self._create))
+    """google-genai Client.aio.models.generate_content 대역."""
 
-    async def _create(self, **kw):
+    def __init__(self, delay=0.0):
+        self.calls = []
+        self.delay = delay
+        self.error = None
+        self.response = ok_response()
+        self.aio = SimpleNamespace(models=SimpleNamespace(generate_content=self._generate))
+
+    async def _generate(self, **kw):
         self.calls.append(kw)
         await asyncio.sleep(self.delay)
-        return SimpleNamespace(
-            stop_reason=self.stop_reason,
-            model="claude-opus-5-5",
-            content=[SimpleNamespace(type="thinking"), SimpleNamespace(type="text", text="## 핵심 요약\n- 요약")],
-        )
+        if self.error:
+            raise self.error
+        return self.response
+
+
+def ok_response(text="## 핵심 요약\n- 요약", finish=types.FinishReason.STOP, block=None, candidates=True):
+    return SimpleNamespace(
+        prompt_feedback=SimpleNamespace(block_reason=block) if block else None,
+        candidates=[SimpleNamespace(finish_reason=finish)] if candidates else None,
+        text=text,
+        model_version="gemini-2.5-flash",
+    )
 
 
 def release(i, body="본문 v1", version="1.0.0"):
@@ -54,7 +65,7 @@ def llm(monkeypatch):
     fake = FakeLLM()
     monkeypatch.setattr(main, "llm", lambda: fake)
     monkeypatch.setattr(main, "fetch_release", fake_fetch)
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(main, "RATE_PER_MIN", 100)
     main._generated.clear()
     RELEASES.clear()
@@ -74,7 +85,7 @@ def test_miss_then_cached(client, llm):
     r = client.post(f"/api/releases/{rid}/summary")
     assert r.status_code == 200
     j = r.json()
-    assert j["releaseId"] == rid and j["cached"] is False and j["model"] == "claude-opus-5-5"
+    assert j["releaseId"] == rid and j["cached"] is False and j["model"] == "gemini-2.5-flash"
     assert j["summary"].startswith("## 핵심 요약") and j["createdAt"].endswith("Z")
 
     r = client.post(f"/api/releases/{rid}/summary")
@@ -84,10 +95,10 @@ def test_miss_then_cached(client, llm):
     assert len(llm.calls) == 1
 
     call = llm.calls[0]
-    assert call["model"] == "claude-opus-5-5" and call["fallbacks"] == "default"
-    assert call["betas"] == ["server-side-fallback-2026-07-01"]
-    assert call["output_config"] == {"effort": "medium"} and call["max_tokens"] == 16000
-    assert "thinking" not in call and "temperature" not in call
+    assert call["model"] == main.MODEL
+    assert call["contents"] == main.build_user_content(RELEASES[rid])
+    assert call["config"].system_instruction == main.SYSTEM_PROMPT
+    assert call["config"].max_output_tokens == 8192
 
 
 def test_body_change_regenerates(client, llm):
@@ -117,15 +128,41 @@ def test_bad_id(client):
 
 
 def test_no_api_key_503(client, llm, monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    monkeypatch.delenv("GEMINI_API_KEY")
     r = client.post(f"/api/releases/{release(4)}/summary")
     assert r.status_code == 503 and r.json()["code"] == "LLM_NOT_CONFIGURED"
     assert llm.calls == []
 
 
-def test_refusal_502(client, llm):
-    llm.stop_reason = "refusal"
+@pytest.mark.parametrize("resp", [
+    ok_response(block=types.BlockedReason.SAFETY, candidates=False, text=None),
+    ok_response(finish=types.FinishReason.SAFETY, text=None),
+    ok_response(candidates=False, text=None),
+    ok_response(text="  "),
+])
+def test_blocked_or_empty_502(client, llm, resp):
+    llm.response = resp
     r = client.post(f"/api/releases/{release(5)}/summary")
+    assert r.status_code == 502 and r.json()["code"] == "LLM_FAILED"
+
+
+@pytest.mark.parametrize("retry_delay,expected", [("37.2s", "38"), (None, "60"), ("0.1s", "1")])
+def test_provider_429(client, llm, retry_delay, expected):
+    details = [{"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": retry_delay}] if retry_delay else []
+    llm.error = errors.ClientError(429, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "quota", "details": details}})
+    r = client.post(f"/api/releases/{release(10)}/summary")
+    assert r.status_code == 429 and r.json()["code"] == "RATE_LIMITED"
+    assert r.headers["Retry-After"] == expected
+
+
+@pytest.mark.parametrize("err", [
+    errors.ClientError(403, {"error": {"code": 403, "status": "PERMISSION_DENIED", "message": "x"}}),
+    errors.ServerError(503, {"error": {"code": 503, "status": "UNAVAILABLE", "message": "x"}}),
+    httpx.ConnectError("down"),
+])
+def test_provider_error_502(client, llm, err):
+    llm.error = err
+    r = client.post(f"/api/releases/{release(11)}/summary")
     assert r.status_code == 502 and r.json()["code"] == "LLM_FAILED"
 
 
@@ -191,7 +228,7 @@ def test_release_svc_bad_json_502(monkeypatch):
         async def __aenter__(self): return self
         async def __aexit__(self, *_): pass
         async def get(self, _url): return R()
-    monkeypatch.setattr(main.httpx2, "AsyncClient", C)
+    monkeypatch.setattr(main.httpx, "AsyncClient", C)
     with pytest.raises(main.ApiError) as e:
         asyncio.run(main.fetch_release(1))
     assert e.value.status == 502 and e.value.code == "LLM_FAILED"
