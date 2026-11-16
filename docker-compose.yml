@@ -1,0 +1,60 @@
+# 로컬 전체 실행: make up  /  인프라만: make infra
+name: patch-radar
+x-db-env: &db-env
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_USER: patchradar
+  DB_PASSWORD: patchradar
+  DB_NAME: patchradar
+  REDIS_HOST: redis
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: patchradar
+      POSTGRES_PASSWORD: patchradar
+      POSTGRES_DB: patchradar
+    ports: ["15432:5432"]   # 호스트 5432 충돌 회피
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: pg_isready -U patchradar
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes   # Streams 영속화
+    ports: ["6379:6379"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      retries: 10
+
+  collector-svc:
+    build: services/collector-svc
+    environment:
+      <<: *db-env
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}   # .env에서 읽음
+    ports: ["8081:8081"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  release-svc:
+    build: services/release-svc
+    environment: *db-env
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
+    build: web
+    ports: ["3000:80"]
+    depends_on: [release-svc]
+
+volumes:
+  pgdata:
+  redisdata:
