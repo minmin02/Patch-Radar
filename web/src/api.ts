@@ -40,19 +40,45 @@ export interface ReleaseQuery {
   security: boolean
 }
 
-async function get<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(url, { signal })
+export class ApiError extends Error {
+  status: number
+  code?: string
+  retryAfter?: number
+  constructor(message: string, status: number, code?: string, retryAfter?: number) {
+    super(message)
+    this.status = status
+    this.code = code
+    this.retryAfter = retryAfter
+  }
+}
+
+async function get<T>(url: string, signal?: AbortSignal, method = 'GET'): Promise<T> {
+  const res = await fetch(url, { method, signal })
   if (!res.ok) {
     let msg = `HTTP ${res.status}`
+    let code: string | undefined
     try {
-      msg = (await res.json()).message ?? msg
+      const b = await res.json()
+      msg = b.message ?? msg
+      code = b.code
     } catch { /* 본문이 JSON이 아니면(프록시 오류 등) 상태 코드만 */ }
-    throw new Error(msg)
+    const ra = Number(res.headers.get('Retry-After'))
+    throw new ApiError(msg, res.status, code, ra > 0 ? ra : undefined)
   }
   return res.json()
 }
 
+export interface Summary {
+  releaseId: number
+  summary: string // 한국어 Markdown
+  model: string
+  cached: boolean
+  createdAt: string
+}
+
 export const listTools = () => get<Tool[]>('/api/tools')
+export const getSummary = (id: number, signal?: AbortSignal) => get<Summary>(`/api/releases/${id}/summary`, signal)
+export const createSummary = (id: number, signal?: AbortSignal) => get<Summary>(`/api/releases/${id}/summary`, signal, 'POST')
 export const getRelease = (id: number) => get<Release>(`/api/releases/${id}`)
 
 // 날짜 입력은 로컬 자정 기준. to 는 "미만"이므로 다음날 자정

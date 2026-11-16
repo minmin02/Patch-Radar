@@ -23,7 +23,7 @@ DevOps OSS의 공식 패치 뉴스를 수집해 한 화면에서 보여주는 MS
 | 명령 | 설명 |
 |---|---|
 | `make infra` | postgres(호스트 15432), redis(6379)만 실행 |
-| `make test SERVICE=collector-svc` | 서비스 테스트 (`release-svc`, `web`, 생략 시 전체) |
+| `make test SERVICE=collector-svc` | 서비스 테스트 (`release-svc`, `summary-svc`, `web`, 생략 시 전체) |
 | `make up` / `make down` | 전체 실행(http://localhost:3000) / 종료 |
 | `make lint` | web 린트 |
 

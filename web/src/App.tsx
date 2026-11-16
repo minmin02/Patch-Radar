@@ -2,8 +2,8 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  dateRange, getRelease, listReleases, listTools,
-  type Release, type ReleaseQuery, type ReleaseSummary, type Tool, type ToolId,
+  ApiError, createSummary, dateRange, getRelease, getSummary, listReleases, listTools,
+  type Release, type ReleaseQuery, type ReleaseSummary, type Summary, type Tool, type ToolId,
 } from './api'
 
 const SANITIZE = {
@@ -234,6 +234,63 @@ export default function App() {
   )
 }
 
+const md = (s: string) => DOMPurify.sanitize(marked.parse(s, { async: false }) as string, SANITIZE)
+
+function summaryError(e: unknown) {
+  if (!(e instanceof ApiError)) return '요약 생성 중 오류가 발생했습니다.'
+  if (e.status === 429) return `요약 요청이 많습니다. ${e.retryAfter ?? ''}초 후 다시 시도하세요`.replace('  ', ' ')
+  if (e.status === 503) return '요약 기능이 설정되지 않았습니다'
+  if (e.status === 502) return '요약 생성에 실패했습니다. 잠시 후 다시 시도하세요'
+  return '요약 생성 중 오류가 발생했습니다.'
+}
+
+function SummaryCard({ id }: { id: number }) {
+  const [sum, setSum] = useState<Summary | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const ac = useRef<AbortController | null>(null)
+
+  // Detail이 id로 key되어 있어 id가 바뀌면 언마운트된다. 조회 실패는 조용히 버튼만
+  useEffect(() => {
+    const c = new AbortController()
+    getSummary(id, c.signal).then(setSum).catch(() => {})
+    return () => { c.abort(); ac.current?.abort() }
+  }, [id])
+
+  const generate = () => {
+    ac.current?.abort()
+    const c = (ac.current = new AbortController())
+    setBusy(true)
+    setErr('')
+    createSummary(id, c.signal)
+      .then((s) => { setSum(s); setBusy(false) })
+      .catch((e: unknown) => {
+        if (c.signal.aborted) return
+        setErr(summaryError(e))
+        setBusy(false)
+      })
+  }
+
+  const html = useMemo(() => (sum ? md(sum.summary) : ''), [sum])
+
+  if (!sum) {
+    return (
+      <div className="summary-actions">
+        <button type="button" className="more" disabled={busy} onClick={generate}>핵심요약</button>
+        {busy && <p className="msg" role="status">요약 생성 중… (최대 1분 정도)</p>}
+        {err && <p className="msg error" role="alert">{err}</p>}
+      </div>
+    )
+  }
+  return (
+    <section className="summary" aria-label="핵심요약">
+      <h3>핵심요약</h3>
+      <div className="body" dangerouslySetInnerHTML={{ __html: html }} />
+      <small>Claude({sum.model})로 생성 · AI 요약은 틀릴 수 있으니 원문을 확인하세요 · <time dateTime={sum.createdAt}>{new Date(sum.createdAt).toLocaleString('ko-KR')}</time></small>
+    </section>
+  )
+}
+
 function Detail({ id, onClose }: { id: number; onClose: () => void }) {
   const [rel, setRel] = useState<Release | null>(null)
   const [error, setError] = useState('')
@@ -261,6 +318,7 @@ function Detail({ id, onClose }: { id: number; onClose: () => void }) {
           <p>{isHttp(rel.url)
             ? <a href={rel.url} target="_blank" rel="noopener noreferrer">원문 보기 ↗</a>
             : <span>{rel.url}</span>}</p>
+          <SummaryCard id={id} />
           {html !== null ? <div className="body" dangerouslySetInnerHTML={{ __html: html }} />
             : rel.body ? <pre className="body">{rel.body}</pre>
             : <p className="msg">본문이 없습니다. 원문 링크를 확인하세요.</p>}

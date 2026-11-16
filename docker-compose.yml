@@ -50,10 +50,20 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
 
+  summary-svc:
+    build: services/summary-svc
+    environment:
+      <<: *db-env
+      RELEASE_API_URL: http://release-svc:8080
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}   # .env에서 읽음. 없으면 요약만 503
+    ports: ["8082:8082"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
   web:
     build: web
     ports: ["3000:80"]
-    depends_on: [release-svc]
+    depends_on: [release-svc, summary-svc]
 
 volumes:
   pgdata:

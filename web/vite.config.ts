@@ -5,6 +5,10 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    proxy: { '/api': 'http://localhost:8080' },
+    proxy: {
+      // 핵심요약은 summary-svc(8082), 나머지 /api는 release-svc(8080). 운영 nginx.conf와 같은 규칙
+      '^/api/releases/[^/]+/summary$': 'http://localhost:8082',
+      '/api': 'http://localhost:8080',
+    },
   },
 })

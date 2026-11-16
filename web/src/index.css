@@ -47,6 +47,11 @@ header p { margin: 0 0 12px; color: var(--muted); }
 .body img { max-width: 100%; }
 pre.body { white-space: pre-wrap; }
 .body pre { overflow-x: auto; background: var(--card); padding: 8px; }
+.summary { margin: 12px 0; padding: 8px 14px; border: 1px solid var(--accent); border-radius: 8px; background: var(--card); overflow-wrap: anywhere; }
+.summary h3 { margin: 4px 0; font-size: 1rem; }
+.summary small { display: block; margin-top: 8px; color: var(--muted); font-size: .75rem; }
+.summary-actions .more { margin: 8px 0; }
+.summary-actions .more:disabled { opacity: .6; cursor: default; }
 @media (max-width: 800px) {
   .has-detail .main { grid-template-columns: minmax(0, 1fr); }
   .detail { position: fixed; inset: 0; z-index: 10; max-height: none; border-radius: 0; background: var(--bg); }
