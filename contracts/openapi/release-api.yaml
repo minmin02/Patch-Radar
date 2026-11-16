@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Patch Radar release-svc API
   version: 0.1.0
-  description: 수집된 OSS 릴리스 조회. 공개 API이므로 공개 릴리스 정보만 다룬다(contracts/domain.md).
+  description: 수집된 OSS 릴리스 조회와 핵심요약(summary 경로는 summary-svc가 처리). 공개 API이므로 공개 릴리스 정보만 다룬다(contracts/domain.md).
 servers:
   - url: http://localhost:8080
 paths:
@@ -57,6 +57,43 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Release" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/releases/{id}/summary:
+    description: >-
+      핵심요약(LLM). summary-svc가 처리한다(로컬 포트 8082). 공개 경로는 같은 호스트의 /api 아래에 둔다.
+      생성 규칙은 contracts/domain.md "요약 생성 (summary-svc)".
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+    get:
+      summary: 캐시된 요약 조회 (LLM 호출 없음)
+      description: >-
+        현재 릴리스 내용(content_hash)에 대한 캐시된 요약이 있으면 200.
+        릴리스가 없으면 404 `NOT_FOUND`, 릴리스는 있지만 요약이 없으면 404 `SUMMARY_NOT_FOUND`.
+        release-svc 조회가 실패하면 502 `LLM_FAILED`.
+      operationId: getSummary
+      responses:
+        "200":
+          description: OK (cached=true)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Summary" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+    post:
+      summary: 요약 생성 (캐시가 있으면 그대로 반환)
+      description: >-
+        요청 본문 없음. 캐시가 있으면 200(cached=true), 없으면 생성 후 200(cached=false).
+        새 생성(캐시 미스)에만 전역 분당 한도를 적용한다. 같은 릴리스 동시 요청은 한 번만 생성한다.
+      operationId: createSummary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Summary" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/releases/stream:
     get:
       summary: 새로 저장된 릴리스 실시간 push (SSE)
@@ -113,6 +150,15 @@ components:
         page: { type: integer }
         size: { type: integer }
         total: { type: integer, format: int64 }
+    Summary:
+      type: object
+      required: [releaseId, summary, model, cached, createdAt]
+      properties:
+        releaseId: { type: integer, format: int64 }
+        summary: { type: string, description: 한국어 Markdown. 섹션 형식은 contracts/domain.md }
+        model: { type: string, examples: [claude-opus-5-5] }
+        cached: { type: boolean, description: 캐시에서 반환했으면 true, 이번 요청에서 생성했으면 false }
+        createdAt: { type: string, format: date-time, description: 요약 생성 시각 }
     Error:
       type: object
       required: [code, message]
@@ -126,7 +172,26 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
     NotFound:
-      description: 없음
+      description: "없음. code: 릴리스 없음 `NOT_FOUND`, 요약 없음 `SUMMARY_NOT_FOUND`(getSummary만)"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    TooManyRequests:
+      description: "새 요약 생성 한도 초과. code `RATE_LIMITED`"
+      headers:
+        Retry-After:
+          description: 다시 시도할 때까지 기다릴 초
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    BadGateway:
+      description: "LLM 호출 실패·거절 또는 release-svc 조회 실패. code `LLM_FAILED`"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    ServiceUnavailable:
+      description: "LLM API 키 미설정. code `LLM_NOT_CONFIGURED`"
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

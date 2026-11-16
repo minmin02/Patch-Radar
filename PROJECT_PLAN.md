@@ -11,7 +11,7 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
 
 | MVP 포함 | 확장 과제 (나중에) | 제외 |
 |---|---|---|
-| 8개 OSS 릴리스 수집 (5~10분 폴링) | LLM 분석 파이프라인 (8절) | 팀즈 알림 |
+| 8개 OSS 릴리스 수집 (5~10분 폴링) | LLM 분석 파이프라인 (8절). 이 중 온디맨드 핵심요약은 구현됨(ADR-004) | 팀즈 알림 |
 | 한 화면 목록: 도구·기간 필터, 검색, 원문 링크 | 설치된 도구의 버전 비교 (내부 전용) | 로그인 |
 | 새 릴리스 화면 자동 반영 (SSE) | | DevOpsit 내부 정보 노출 |
 
@@ -74,6 +74,21 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
 
 - 외부 진입점이 release-svc 하나뿐이므로 Ingress로 충분하다. 서비스가 늘어나면 Spring Cloud Gateway를 도입한다.
 
+### ADR-004: 요약 기능을 별도 summary-svc(Python)로 추가
+
+- **상황**: 릴리스 노트가 길어 상세 화면에서 핵심만 먼저 보고 싶다는 요구가 생겼다. LLM으로 한국어 핵심요약을 만들어 보여 준다.
+- **결정**: 새 서비스 **summary-svc**를 추가한다.
+  - Python + 공식 `anthropic` SDK.
+  - 릴리스는 release-svc의 **공개 API로만** 조회한다. release 스키마를 직접 읽지 않는다.
+  - 결과는 자체 `summary` 스키마에 캐시한다.
+  - 공개 경로 `/api/releases/{id}/summary`를 Ingress 경로 라우팅으로 summary-svc에 보낸다(ADR-003 유지, 게이트웨이 도입 없음).
+- **근거**: ADR-001이 내세운 확장 근거를 실제로 검증한다.
+  - 장애 격리: LLM 지연·실패가 summary-svc 안에서 끝난다. 목록·상세 조회 API와 SSE는 영향을 받지 않는다.
+  - 기술 스택 분리: LLM 연동은 Python 생태계로, 기존 Spring Boot 서비스는 그대로 둔다.
+  - 비용 보호를 한 곳에서: 캐시, 생성 횟수 제한, 동시 요청 합치기를 summary-svc 하나에서 관리한다.
+- **감수하는 비용**: 운영할 서비스가 하나 늘어난다(이미지, 배포, 관측). LLM 호출 비용이 든다(캐시와 분당 한도로 상한을 둔다).
+- **검증**: collector-svc·release-svc 코드 변경 0으로 붙으면 이 결정과 ADR-001이 맞았다고 본다.
+
 ---
 
 ## 5. 시스템 아키텍처
@@ -89,6 +104,12 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
            [collector 스키마]                        [release 스키마]   │ REST / SSE
                        PostgreSQL (서비스별 스키마 분리)                 ▼
                                                               web (한 화면)
+                                                                   │ 요약 요청 (/api/releases/{id}/summary)
+                                                        ┌──────────▼───────────────┐
+         release-svc 공개 API ◄── GET /api/releases/{id} ┤ summary-svc :8082        ├──► Claude API
+                                                        │ (Python) 요약·캐시·한도    │
+                                                        └──────────────────────────┘
+                                                              [summary 스키마]
                  ┆ 확장: analysis-svc(Python, LLM)가 release.detected를 구독
                  ┆       → 분석 결과를 release.analyzed로 발행 → release-svc가 화면에 반영
 ```
@@ -97,7 +118,8 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
 |---|---|---|
 | collector-svc | 소스별 스케줄 폴링, 버전 파싱·필터, 중복 제거, 본문 수집, `release.detected` 발행 | `collector.source`, `collector.fetch_state`(ETag, 마지막 확인 시각) |
 | release-svc | 이벤트 소비 → 멱등 저장, 목록·필터·검색·상세 REST, 새 릴리스 SSE | `release.release` |
-| web | 한 화면: 도구 탭·필터, 타임라인 목록, 상세(본문 Markdown 렌더링), 실시간 반영 | 없음 |
+| summary-svc (포트 8082) | 온디맨드 핵심요약: release-svc 공개 API로 릴리스 조회 → Claude API로 한국어 요약 → 캐시, 생성 횟수 제한 | `summary` 스키마 |
+| web | 한 화면: 도구 탭·필터, 타임라인 목록, 상세(본문 Markdown 렌더링, 핵심요약), 실시간 반영 | 없음 |
 
 **규칙**
 - 다른 서비스의 DB 스키마를 직접 읽지 않는다. 서비스 간 소통은 이벤트와 API로만 한다.
@@ -126,6 +148,7 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
 | `GET /api/releases/{id}` | 상세 (본문 포함) |
 | `GET /api/tools` | 도구 목록과 도구별 최신 버전 |
 | `GET /api/releases/stream` | SSE: 새 릴리스 push |
+| `GET`·`POST /api/releases/{id}/summary` | 핵심요약 조회·생성 (summary-svc가 처리) |
 
 ### 기술 스택
 
@@ -168,6 +191,7 @@ docs/adr/   collector-svc/   release-svc/                    계약 준수·테�
 | release-dev | `services/release-svc/` | 경량 | Read, Edit, Write, Bash |
 | web-dev | `web/` (계약 기반 목 API로 먼저 개발) | 경량 | Read, Edit, Write, Bash |
 | reviewer | 전체 읽기 전용, 테스트 실행 | 상위 | Read, Grep, Glob, Bash |
+| summary-dev | `services/summary-svc/` (Python, Claude API). 테스트에서 실제 API 호출 금지 | 경량 | Read, Edit, Write, Bash |
 
 ### 설정 파일
 
@@ -234,6 +258,8 @@ M1과 M2는 계약을 기준으로 병렬 진행한다(collector-dev, release-de
 
 ## 8. 확장 과제: LLM 분석 파이프라인 (요약)
 
+- **구현됨**: 온디맨드 한국어 핵심요약(summary-svc, ADR-004). 사용자가 요청할 때만 생성하고 캐시한다. 규칙은 `contracts/domain.md` "요약 생성".
+- **나머지는 확장 과제**: 아래 파이프라인은 아직 구현하지 않았다.
 - **analysis-svc** (Python): `release.detected` 구독 → 분석 → `release.analyzed` 발행 → release-svc가 화면에 반영.
 - **파이프라인 후보**:
   - 섹션 단위 청킹과 임베딩(pgvector)
@@ -289,7 +315,8 @@ patch-radar/
 ├─ contracts/{openapi,events}/, domain.md
 ├─ services/
 │  ├─ collector-svc/   (CLAUDE.md)
-│  └─ release-svc/     (CLAUDE.md)
+│  ├─ release-svc/     (CLAUDE.md)
+│  └─ summary-svc/     (CLAUDE.md, Python)
 ├─ web/                (CLAUDE.md)
 ├─ deploy/{helm,argocd}/        # M3
 ├─ infra/terraform/             # M3

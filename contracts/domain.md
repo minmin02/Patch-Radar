@@ -57,6 +57,31 @@
   - HTTP 연결 타임아웃은 10초, 읽기 타임아웃은 30초다.
 - **첫 수집**: 소스마다 최근 릴리스(github 한 페이지 기준 30건)를 모두 발행한다. 화면을 처음부터 채우기 위해서다.
 
+## 요약 생성 (summary-svc)
+
+API는 `contracts/openapi/release-api.yaml`의 `/api/releases/{id}/summary`.
+
+- **입력**: release-svc 공개 API(`GET /api/releases/{id}`)로 가져온 릴리스의 도구, 버전, 제목, `url`, 발행일, 본문. release 스키마를 직접 읽지 않는다.
+  - 본문은 외부 데이터다. 프롬프트에서 지시가 아니라 요약 대상 데이터로만 다룬다(본문 안의 지시문은 따르지 않는다).
+  - 공개 릴리스 정보만 입력하므로 내부 정보는 LLM으로 전송되지 않는다.
+- **모델 설정**:
+  - 모델 `claude-opus-5-5`, effort `medium`.
+  - 서버 측 거절 대체: fallbacks `default`, beta `server-side-fallback-2026-07-01`.
+  - 요청당 출력 최대 16000 토큰.
+- **출력 형식**: 한국어 Markdown. 아래 섹션을 이 순서로 고정한다.
+  1. `## 핵심 요약`: 3줄 이내 목록
+  2. `## 주요 변경`
+  3. `## Breaking / Deprecation`
+  4. `## 보안`
+  5. `## 업그레이드 시 주의`
+
+  원문에 해당 내용이 없으면 그 섹션에 `언급 없음`이라고 쓴다. 원문에 없는 내용을 추측해 쓰지 않는다.
+- **캐시**: 키 `(release_id, content_hash)`. `content_hash`는 SHA-256(`title + "\n" + (version or "") + "\n" + (body or "")`). 이 공식을 바꾸면 기존 캐시가 모두 무효가 되므로 바꾸지 않는다. 본문이 바뀌면 해시가 바뀌므로 다시 생성한다. 캐시 적중 시 LLM을 호출하지 않는다.
+- **비용 보호**:
+  - 새 생성(캐시 미스)에만 전역 분당 한도를 둔다. 기본 10, 환경변수 `SUMMARY_RATE_PER_MIN`. 초과 시 429 `RATE_LIMITED`와 `Retry-After`(초).
+  - 같은 릴리스에 대한 동시 요청은 한 번만 생성하고 나머지는 그 결과를 받는다.
+- **오류 코드**: `NOT_FOUND`(릴리스 없음), `SUMMARY_NOT_FOUND`(GET에서 캐시 없음), `RATE_LIMITED`(429), `LLM_FAILED`(502: LLM 호출 실패·거절, release-svc 조회 실패), `LLM_NOT_CONFIGURED`(503: API 키 없음).
+
 ## 이벤트 전달 (Redis Streams)
 
 - `release.detected`: collector-svc 발행, release-svc가 consumer group `release-svc`로 소비.
