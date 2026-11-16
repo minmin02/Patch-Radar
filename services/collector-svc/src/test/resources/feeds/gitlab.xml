@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>GitLab Releases</title><id>https://docs.gitlab.com/releases/</id><link href="https://docs.gitlab.com/releases/" rel="alternate"/><link href="https://docs.gitlab.com/releases/all-releases.xml" rel="self" type="application/atom+xml"/><updated>2026-11-12T00:00:00Z</updated><author><name>The GitLab Team</name></author><entry><title>GitLab Patch Release: 19.5.5, 19.4.7</title><link href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-5-released/" rel="alternate"/><id>https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-5-released/</id><published>2026-11-12T00:00:00Z</published><updated>2026-11-12T00:00:00Z</updated><author><name>Akinyele Cafe-Febrissy</name></author><content type="html"><![CDATA[<!-- For detailed instructions on how to complete this, please see https://gitlab.com/gitlab-org/release/docs/-/blob/master/general/patch/blog-post.md -->
+<!-- markdownlint-disable -->
+<!-- vale off -->
+<p>On November 12, 2026, we released versions 19.5.5, 19.4.7 for GitLab Community Edition and Enterprise Edition.</p>
+<p>These versions resolve a number of regressions and bugs. This patch release does not include any security fixes.</p>
+<h2 id="gitlab-orbit-is-now-available-in-gitlab-194-and-195">GitLab Orbit is now available in GitLab 19.4 and 19.5</h2>
+<p>Due to popular demand, this patch release brings GitLab Orbit to GitLab 19.4 and 19.5, so you can start using Orbit without upgrading to 19.6 first. Patch releases normally contain only bug and security fixes. Adding Orbit is a one-time]]></content></entry><entry><title>GitLab Critical Patch Release: 19.5.4, 19.4.6, 19.3.8</title><link href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-4-released/" rel="alternate"/><id>https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-4-released/</id><published>2026-11-10T00:00:00Z</published><updated>2026-11-10T00:00:00Z</updated><author><name>Greg Myers</name></author><content type="html"><![CDATA[<!-- For detailed instructions on how to complete this, please see https://gitlab.com/gitlab-org/release/docs/-/blob/master/general/patch/blog-post.md -->
+<!-- markdownlint-disable -->
+<!-- vale off -->
+<p>On November 10, 2026, we released versions 19.5.4, 19.4.6, 19.3.8 for GitLab Community Edition and Enterprise Edition.</p>
+<p>These versions contain important bug and security fixes, and we strongly recommend that all self-managed GitLab installations be upgraded to
+one of these versions immediately.
+GitLab.com and GitLab Dedicated are already running a patched version. GitLab.com and GitLab Dedicated customers do not need to take action.</p>
+<p>GitLab releases fixes for vulnerabilities in patch releases. There are two types of patch releases:
+scheduled releases and ad-hoc critical patch]]></content></entry><entry><title>GitLab Patch Release and Security Update: 19.5.3, 19.4.5, 19.3.7, 19.2.10, 19.1.10, 19.0.11, 18.11.14</title><link href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-3-released/" rel="alternate"/><id>https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-3-released/</id><published>2026-10-29T00:00:00Z</published><updated>2026-10-29T00:00:00Z</updated><author><name>Akinyele Cafe-Febrissy</name></author><content type="html"><![CDATA[<!-- markdownlint-disable -->
+<!-- vale off -->
+<p>On October 29, 2026, we released versions 19.5.3, 19.4.5, 19.3.7, 19.2.10, 19.1.10, 19.0.11, 18.11.14 for GitLab Community Edition (CE) and Enterprise Edition (EE). GitLab.com is already running the patched version. GitLab Dedicated tenants running 19.4.3-internal0 or later already include these fixes and do not need to take action.</p>
+<p>We <a href="https://gitlab.com/gitlab-org/gitlab-runner/-/releases/v19.5.1">also released version 19.5.1</a> for GitLab Runner and released versions 18.11.8, 19.0.13, 19.1.9, 19.2.5, 19.3.3, 19.4.3, 19.5.3 for GitLab AI Gateway.</p>
+<p>These versions address <a href="https://www.cve.org/CVERecord?id=CVE-2026-111943">CVE-2026-111943</a>, along with additional unrelated bug fixes. We strongly recommend tha]]></content></entry><entry><title>GitLab Critical Patch Release: 19.5.1, 19.4.3, 19.3.6, 19.2.9, 19.1.9, 19.0.10, 18.11.13</title><link href="https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-1-released/" rel="alternate"/><id>https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-1-released/</id><published>2026-10-21T00:00:00Z</published><updated>2026-10-21T00:00:00Z</updated><author><name>Félix Veillette-Potvin</name></author><content type="html"><![CDATA[<!-- markdownlint-disable -->
+<!-- vale off -->
+<!-- For detailed instructions on how to complete this, please see https://gitlab.com/gitlab-org/release/docs/-/blob/master/general/patch/blog-post.md -->
+<p>On October 21, 2026, we released versions 19.5.1, 19.4.3, 19.3.6, 19.2.9, 19.1.9, 19.0.10, 18.11.13 for GitLab Community Edition (CE) and Enterprise Edition (EE).</p>
+<p>These versions contain important bug and security fixes, and we strongly recommend that all self-managed GitLab installations be upgraded to
+one of these versions immediately. GitLab.com is already running the patched version. GitLab Dedicated tenants running 19.3.5-internal0 and 19.4.2-internal0 or later already include these fixes and do not need to take action.</p>
+<p>GitLab releases fixes for vulnerabilities in patch]]></content></entry><entry><title>GitLab 19.5 release notes</title><link href="https://docs.gitlab.com/releases/19/gitlab-19-5-released/" rel="alternate"/><id>https://docs.gitlab.com/releases/19/gitlab-19-5-released/</id><published>2026-10-15T00:00:00Z</published><updated>2026-10-15T00:00:00Z</updated><author><name>The GitLab Team</name></author><content type="html"><![CDATA[<p>On October 15, 2026, GitLab 19.5 was released with the following features.</p>
+<p>We are excited to recognize <a href="https://gitlab.com/DhairyaMajmudar">Dhairya</a>, a Level 3 contributor,
+as this month&rsquo;s <a href="https://contributors.gitlab.com/notable-contributors">Notable Contributor</a>!</p>
+<p>Dhairya contributed to offline transfer and Organizations support for import,
+so that groups, projects, and their memberships can move between GitLab instances.</p>
+<p>Before you upgrade to GitLab 19.5, review the
+<a href="/update/versions/gitlab_19_changes/#upgrade-to-195">upgrade notes</a>
+and the <a href="/update/deprecations/#gitlab-195">deprecations and removals for GitLab 19.5</a>.</p>
+
+<div class="release-post-assembled">
+    <section class="release-primary">
+      <h2 id="prim]]></content></entry></feed>

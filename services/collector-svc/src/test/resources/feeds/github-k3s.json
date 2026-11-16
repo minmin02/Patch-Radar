@@ -1,0 +1,38 @@
+[
+ {
+  "tag_name": "v1.37.2+k3s1",
+  "name": "v1.37.2+k3s1",
+  "html_url": "https://github.com/k3s-io/k3s/releases/tag/v1.37.2%2Bk3s1",
+  "published_at": "2026-11-03T17:32:38Z",
+  "draft": false,
+  "prerelease": false,
+  "body": "<!-- v1.37.2+k3s1 -->\r\n\r\nThis release updates Kubernetes to v1.37.2, and fixes a number of issues.\r\n\r\nFor more details on what's new, see the [Kubernetes release notes](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.37.md#changelog-since-v1371).\r\n\r\n## Changes since v1.37.1+k3s1:\r\n\r\n* Add gateway-api-crd to help [(#14727)](https://github.com/k3s-io/k3s/pull/14727)\r\n* Run snapshotrestore test entries in parallel [(#14733)](https://github.com/k3s-io/k3s/pull/14733)\r\n* Deps: bump containerd to v2.3.6 [(#14744)](https://github.com/k3s-io/k3s/pull/14744)\r\n* Bump Traefik to v3.7.14 and gateway-api to 1.6.2 [(#14757)](https://github.com/k3s-io/k3s/pull/14757)\r\n* Bump gateway-api to 1.6.3 [(#14769)](https://github.com/k3s-io/k3s/pull/14769)\r\n* Bump K3s-root version to v0.15.3 [(#14782)](https://github.com/k3s-io/k3s/pull/14782)\r\n* Bump flannel to v0.28.10 [(#14796)](https://github.com/k3s-io/k3s/pull/14796)\r\n* Bump containerd to v2.3.7 [(#14805)](https://github.com/k3s-io/k3s/pull/14805)\r\n* Update kube-roter to v2.11.1 [(#14762)](https://github.com/k3s-io/k3s/pull/14762)\r\n* Remove unused replace directives [(#14821)](https://github.com/k3s-io/k3s/pull/14821)\r\n* Bump Klipper Helm and Helm Controller version [(#14814)](https://github.com/k3s-io/k3s/pull/14814)\r\n* Backports for 2026-10 [(#14825)](https://github.com/k3s-io/k3s/pull/14825)\r\n  * Prevent systemd restart loop when no default route is present by waiting 60 seconds for default route to appear #14527\r"
+ },
+ {
+  "tag_name": "v1.37.2-rc2+k3s1",
+  "name": "v1.37.2-rc2+k3s1",
+  "html_url": "https://github.com/k3s-io/k3s/releases/tag/v1.37.2-rc2%2Bk3s1",
+  "published_at": "2026-10-30T13:43:11Z",
+  "draft": false,
+  "prerelease": true,
+  "body": "## What's Changed\n* [release-1.37] Bump x/net and pass `golang.org/x/` replacements through when building bundled binaries by @brandond in https://github.com/k3s-io/k3s/pull/14935\n\n\n**Full Changelog**: https://github.com/k3s-io/k3s/compare/v1.37.2-rc1+k3s1...v1.37.2-rc2+k3s1"
+ },
+ {
+  "tag_name": "v1.37.2-rc1+k3s1",
+  "name": "v1.37.2-rc1+k3s1",
+  "html_url": "https://github.com/k3s-io/k3s/releases/tag/v1.37.2-rc1%2Bk3s1",
+  "published_at": "2026-10-29T15:23:18Z",
+  "draft": false,
+  "prerelease": true,
+  "body": "## What's Changed\n* [Release 1.37] Add gateway-api-crd to help by @manuelbuil in https://github.com/k3s-io/k3s/pull/14727\n* [Release-1.37] Run snapshotrestore test entries in parallel   by @dereknola in https://github.com/k3s-io/k3s/pull/14733\n* [Release-1.37] deps: bump containerd to v2.3.6 by @vitorsavian in https://github.com/k3s-io/k3s/pull/14744\n* [Release 1.37] Bump Traefik to v3.7.14 and gateway-api to 1.6.2 by @manuelbuil in https://github.com/k3s-io/k3s/pull/14757\n* [Release-1.37] Bump gateway-api to 1.6.3 by @manuelbuil in https://github.com/k3s-io/k3s/pull/14769\n* [release-1.37] Bump K3s-root version to v0.15.3 by @github-actions[bot] in https://github.com/k3s-io/k3s/pull/14782\n* [Release 1.37] Bump flannel to v0.28.10 by @thomasferrandiz in https://github.com/k3s-io/k3s/pull/14796\n* [release-1.37] Bump containerd to v2.3.7 by @brandond in https://github.com/k3s-io/k3s/pull/14805\n* [Release 1.37] Update kube-roter to v2.11.1 by @rbrtbnfgl in https://github.com/k3s-io/k3s/pull/14762\n* [release-1.37] Remove unused replace directives by @mgfritch in https://github.com/k3s-io/k3s/pull/14821\n* [release-1.37] Bump Klipper Helm and Helm Controller version by @github-actions[bot] in https://github.com/k3s-io/k3s/pull/14814\n* [release-1.37] Backports for 2026-10 by @brandond in https://github.com/k3s-io/k3s/pull/14825\n* [release-1.37] Bump rancher/mirrored-library-traefik image version by @github-actions[bot] in https://github.com/k3s-io/k3s/pull/14833\n* [release-1.37] Bump"
+ },
+ {
+  "tag_name": "v1.36.6+k3s1",
+  "name": "v1.36.6+k3s1",
+  "html_url": "https://github.com/k3s-io/k3s/releases/tag/v1.36.6%2Bk3s1",
+  "published_at": "2026-11-03T17:31:32Z",
+  "draft": false,
+  "prerelease": false,
+  "body": "<!-- v1.36.6+k3s1 -->\r\n\r\nThis release updates Kubernetes to v1.36.6, and fixes a number of issues.\r\n\r\nFor more details on what's new, see the [Kubernetes release notes](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.36.md#changelog-since-v1365).\r\n\r\n## Changes since v1.36.5+k3s1:\r\n\r\n* Run snapshotrestore test entries in parallel [(#14734)](https://github.com/k3s-io/k3s/pull/14734)\r\n* Deps: bump containerd to v2.3.6 [(#14742)](https://github.com/k3s-io/k3s/pull/14742)\r\n* Bump Traefik image and gateway-api [(#14750)](https://github.com/k3s-io/k3s/pull/14750)\r\n* Bump gateway-api to 1.6.3 [(#14771)](https://github.com/k3s-io/k3s/pull/14771)\r\n* Bump K3s-root version to v0.15.3 [(#14779)](https://github.com/k3s-io/k3s/pull/14779)\r\n* Bump flannel to v0.28.10 [(#14798)](https://github.com/k3s-io/k3s/pull/14798)\r\n* Bump containerd to v2.3.7 [(#14806)](https://github.com/k3s-io/k3s/pull/14806)\r\n* Update kube-roter to v2.11.1 [(#14763)](https://github.com/k3s-io/k3s/pull/14763)\r\n* Remove unused replace directives [(#14822)](https://github.com/k3s-io/k3s/pull/14822)\r\n* Bump Klipper Helm and Helm Controller version [(#14816)](https://github.com/k3s-io/k3s/pull/14816)\r\n* Backports for 2026-10 [(#14826)](https://github.com/k3s-io/k3s/pull/14826)\r\n  * Prevent systemd restart loop when no default route is present by waiting 60 seconds for default route to appear #14527\r\n  * Exclude kms-providers from apiserver readiness check #14635\r\n  * Clarify etcd local vs S3 sna"
+ }
+]

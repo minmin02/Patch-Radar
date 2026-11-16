@@ -1,0 +1,215 @@
+<rss version='2.0' xmlns:atom='http://www.w3.org/2005/Atom' xmlns:content='https://purl.org/rss/1.0/modules/content/'>
+<channel>
+<title>
+Jenkins LTS Changelog
+</title>
+<link>
+https://jenkins.io/changelog-stable
+</link>
+<atom:link href='https://www.jenkins.io/changelog-stable/rss.xml' rel='self' type='application/rss+xml'></atom:link>
+<description>
+Changelog for Jenkins LTS releases
+</description>
+<lastBuildDate>
+Mon, 16 Nov 2026 00:00:00 +0000
+</lastBuildDate>
+<item>
+<title>Jenkins 2.580.2</title>
+<link>
+https://jenkins.io/changelog-stable//#v2.580.2
+</link>
+<description>
+&lt;ul&gt;
+&lt;li&gt;
+Security:
+Important security fixes.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Update dependency handlebars to v4.7.10.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Avoid security scanner complaints by integrating the most recent release of the ASM byte code manipulation library.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Use Jetty 12.1.14 from Winstone and Stapler updates.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Adapt OS EOL test for Ubuntu 22.04.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Keep ANSI colours in the live console of freestyle builds after a pause in output.
+&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+<guid isPermaLink='false'>
+jenkins-2.580.2
+</guid>
+<pubDate>
+Wed, 28 Oct 2026 00:00:00 +0000
+</pubDate>
+</item><item>
+<title>Jenkins 2.580.1</title>
+<link>
+https://jenkins.io/changelog-stable//#v2.580.1
+</link>
+<description>
+&lt;strong&gt;Changes since 2.580:&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;
+Bug:
+Include Apache Commons Lang 2.6 for compatibility.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Include Apache Ant 1.10.18 to silence software content analysis scanners.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Update slf4j logging to v2.0.19 for Winstone and Stapler.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Update Winstone to version 8.1050.x with Eclipse Jetty 12.1.13.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Update Stapler to version 2119.x with Eclipse Jetty 12.1.13.
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;strong&gt;Notable changes since 2.568.3:&lt;/strong&gt;
+&lt;ul&gt;
+&lt;li&gt;
+Major RFE:
+Refresh the status icons to show the status of the current job, without including status of previous job.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Stop bundling the bouncycastle API, Command Agent Launcher, Oracle Java SE Development Kit Installer, JAXB, Trilead API, SSH server, JavaBeans Activation Framework (JAF) API, JavaMail API, and Instance Identity plugins, reducing the size of &lt;code&gt;jenkins.war&lt;/code&gt; by more than 20 MB.
+Jenkins no longer installs these plugins automatically when upgrading from Jenkins 2.356 or earlier, or when a plugin built against such an old version is discovered.
+If you are affected, install these plugins through the plugin manager.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Stop bundling the JUnit, Mailer, Matrix Authorization Strategy, Matrix Project, and OWASP Markup Formatter plugins, reducing the size of &lt;code&gt;jenkins.war&lt;/code&gt; by more than 20 MB.
+Jenkins no longer installs these plugins automatically when upgrading from Jenkins 1.577 or earlier, or when a plugin built against such an old version is discovered.
+If you are affected, install these plugins through the plugin manager.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Reduce size of Jenkins war by removing unused CLI dependency.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Reduce size of Jenkins war by removing comments from translation files.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Standardise Jenkins branding during Sign in, Registration, and About Jenkins
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Refine Notifications component.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Refine the 'System Log' Manage Jenkins page
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Standardise command palette, dialog, dropdown, and tooltip materials
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Accept ECDSA and Ed25519 private keys for access to the Jenkins command line interface.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Add password complexity rules and extension point for configurable password validation.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Allow administrators to configure the remember-me ("Keep me signed in") cookie validity with the &lt;code&gt;hudson.security.TokenBasedRememberMeServices2.tokenValidity&lt;/code&gt; system property.
+The validity period is limited to 1 year.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Prohibit the deserialization of &lt;code&gt;Object&lt;/code&gt; fields by default.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Check that the deserialized elements in additional collections are of the expected type.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Render Plugin Manager entries without wiki URLs as plain text (regression in 2.370).
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Fix tailing of logs when partial lines are emitted (regression in 2.534).
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Fix missing shadow and blur on the global search results dropdown.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Fix breadcrumb overflow menu items not rendering.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Restore the Cancel button on the Console Output page of running builds so users can abort a build without leaving the log view.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Show only accessible links in sidepanel for new manage Jenkins UI.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Fix the combobox suggestion list flashing and closing immediately when the field is clicked.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Center the chevron in the list of builds on the Build History view.
+&lt;/li&gt;
+&lt;li&gt;
+Bug:
+Do not show "Agent is connected" message when node is marked temporarily offline
+&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+<guid isPermaLink='false'>
+jenkins-2.580.1
+</guid>
+<pubDate>
+Wed, 30 Sep 2026 00:00:00 +0000
+</pubDate>
+</item><item>
+<title>Jenkins 2.568.3</title>
+<link>
+https://jenkins.io/changelog-stable//#v2.568.3
+</link>
+<description>
+&lt;ul&gt;
+&lt;li&gt;
+Security:
+Important security fixes.
+&lt;/li&gt;
+&lt;li&gt;
+RFE:
+Update Winstone to version 8.1047.x with Eclipse Jetty 12.1.12.
+&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+<guid isPermaLink='false'>
+jenkins-2.568.3
+</guid>
+<pubDate>
+Wed, 2 Sep 2026 00:00:00 +0000
+</pubDate>
+</item></channel>
+</rss>
