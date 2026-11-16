@@ -37,4 +37,6 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	// 테스트는 개발용 DB(patchradar)와 분리된 DB를 쓴다. 생성은 make infra가 한다
+	environment 'DB_NAME', System.getenv('TEST_DB_NAME') ?: 'patchradar_test'
 }

@@ -7,6 +7,8 @@ SERVICE ?= all
 
 infra:            ## postgres, redis만 실행 (테스트·로컬 개발용)
 	docker compose up -d --wait postgres redis
+	@docker compose exec -T postgres psql -U patchradar -tAc "select 1 from pg_database where datname='patchradar_test'" | grep -q 1 \
+		|| docker compose exec -T postgres createdb -U patchradar patchradar_test
 
 up:               ## 전체 빌드 후 실행 → http://localhost:3000
 	docker compose up -d --build --wait
