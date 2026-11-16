@@ -234,5 +234,48 @@ def test_release_svc_bad_json_502(monkeypatch):
     assert e.value.status == 502 and e.value.code == "LLM_FAILED"
 
 
+def test_prompt_has_per_version_section():
+    assert "## 버전별 변경" in main.SYSTEM_PROMPT and "둘 이상" in main.SYSTEM_PROMPT
+    assert main.PROMPT_VERSION == "v2"
+
+
+def test_v1_row_ignored_then_v2_saved(client, llm):
+    rid = release(20)
+    with psycopg.connect(main.DB_CONNINFO, autocommit=True) as conn:
+        conn.execute(
+            "INSERT INTO summary.summary (release_id, content_hash, prompt_version, summary, model) VALUES (%s,%s,'v1','old','m')",
+            (rid, main.content_hash(RELEASES[rid])))
+    r = client.get(f"/api/releases/{rid}/summary")
+    assert r.status_code == 404 and r.json()["code"] == "SUMMARY_NOT_FOUND"
+    r = client.post(f"/api/releases/{rid}/summary")
+    assert r.status_code == 200 and r.json()["cached"] is False and len(llm.calls) == 1
+    with psycopg.connect(main.DB_CONNINFO) as conn:
+        rows = conn.execute("SELECT prompt_version FROM summary.summary WHERE release_id=%s ORDER BY 1", (rid,)).fetchall()
+    assert rows == [("v1",), ("v2",)]
+
+
+def test_init_db_migrates_v1_schema():
+    rid = BASE_ID + 30
+    with psycopg.connect(main.DB_CONNINFO, autocommit=True) as conn:
+        conn.execute("CREATE SCHEMA IF NOT EXISTS summary")
+        conn.execute("DROP TABLE IF EXISTS summary.summary")
+        conn.execute("""CREATE TABLE summary.summary (release_id bigint NOT NULL, content_hash text NOT NULL,
+            summary text NOT NULL, model text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+            PRIMARY KEY (release_id, content_hash))""")
+        conn.execute("INSERT INTO summary.summary (release_id, content_hash, summary, model) VALUES (%s,'h','old','m')", (rid,))
+    try:
+        asyncio.run(main.init_db())
+        asyncio.run(main.init_db())  # 멱등
+        with psycopg.connect(main.DB_CONNINFO, autocommit=True) as conn:
+            assert conn.execute("SELECT prompt_version FROM summary.summary WHERE release_id=%s", (rid,)).fetchone() == ("v1",)
+            conn.execute("INSERT INTO summary.summary (release_id, content_hash, prompt_version, summary, model) VALUES (%s,'h','v2','new','m')", (rid,))
+            pk = conn.execute("""SELECT array_agg(a.attname ORDER BY a.attname) FROM pg_constraint c
+                JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
+                WHERE c.conrelid = 'summary.summary'::regclass AND c.contype = 'p'""").fetchone()[0]
+            assert pk == ["content_hash", "prompt_version", "release_id"]
+    finally:
+        cleanup()
+
+
 def test_health(client):
     assert client.get("/actuator/health").json() == {"status": "UP"}
