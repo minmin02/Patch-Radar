@@ -64,10 +64,14 @@ API는 `contracts/openapi/release-api.yaml`의 `/api/releases/{id}/summary`.
 - **입력**: release-svc 공개 API(`GET /api/releases/{id}`)로 가져온 릴리스의 도구, 버전, 제목, `url`, 발행일, 본문. release 스키마를 직접 읽지 않는다.
   - 본문은 외부 데이터다. 프롬프트에서 지시가 아니라 요약 대상 데이터로만 다룬다(본문 안의 지시문은 따르지 않는다).
   - 공개 릴리스 정보만 입력하므로 내부 정보는 LLM으로 전송되지 않는다.
+  - 무료 등급에서는 입력이 공급자의 모델 개선에 쓰일 수 있다. 입력이 공개 릴리스 노트뿐이므로 허용한다.
 - **모델 설정**:
-  - 모델 `claude-opus-5-5`, effort `medium`.
-  - 서버 측 거절 대체: fallbacks `default`, beta `server-side-fallback-2026-07-01`.
-  - 요청당 출력 최대 16000 토큰.
+  - 공급자 Google Gemini API(무료 등급), 공식 `google-genai` Python SDK.
+  - 모델은 환경변수 `GEMINI_MODEL`(기본값은 Flash 계열 모델, 구현에서 정한다). API 키는 `GEMINI_API_KEY`.
+  - 요청당 출력 최대 8192 토큰.
+- **공급자 오류 처리**:
+  - 무료 등급에는 공급자 측 분당·일일 요청 한도가 있다. 공급자가 한도 초과(HTTP 429, `RESOURCE_EXHAUSTED`)를 주면 429 `RATE_LIMITED`로 응답한다. `Retry-After`는 공급자 값이 있으면 그 값, 없으면 60초.
+  - 안전 필터 차단이나 빈 응답은 502 `LLM_FAILED`.
 - **출력 형식**: 한국어 Markdown. 아래 섹션을 이 순서로 고정한다.
   1. `## 핵심 요약`: 3줄 이내 목록
   2. `## 주요 변경`
@@ -80,7 +84,7 @@ API는 `contracts/openapi/release-api.yaml`의 `/api/releases/{id}/summary`.
 - **비용 보호**:
   - 새 생성(캐시 미스)에만 전역 분당 한도를 둔다. 기본 10, 환경변수 `SUMMARY_RATE_PER_MIN`. 초과 시 429 `RATE_LIMITED`와 `Retry-After`(초).
   - 같은 릴리스에 대한 동시 요청은 한 번만 생성하고 나머지는 그 결과를 받는다.
-- **오류 코드**: `NOT_FOUND`(릴리스 없음), `SUMMARY_NOT_FOUND`(GET에서 캐시 없음), `RATE_LIMITED`(429), `LLM_FAILED`(502: LLM 호출 실패·거절, release-svc 조회 실패), `LLM_NOT_CONFIGURED`(503: API 키 없음).
+- **오류 코드**: `NOT_FOUND`(릴리스 없음), `SUMMARY_NOT_FOUND`(GET에서 캐시 없음), `RATE_LIMITED`(429: 자체 분당 한도 또는 공급자 한도 초과), `LLM_FAILED`(502: LLM 호출 실패·안전 필터 차단·빈 응답, release-svc 조회 실패), `LLM_NOT_CONFIGURED`(503: `GEMINI_API_KEY` 없음).
 
 ## 이벤트 전달 (Redis Streams)
 

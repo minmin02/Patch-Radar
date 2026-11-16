@@ -156,7 +156,7 @@ components:
       properties:
         releaseId: { type: integer, format: int64 }
         summary: { type: string, description: 한국어 Markdown. 섹션 형식은 contracts/domain.md }
-        model: { type: string, examples: [claude-opus-5-5] }
+        model: { type: string, examples: [gemini-2.5-flash] }
         cached: { type: boolean, description: 캐시에서 반환했으면 true, 이번 요청에서 생성했으면 false }
         createdAt: { type: string, format: date-time, description: 요약 생성 시각 }
     Error:
@@ -177,7 +177,7 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
     TooManyRequests:
-      description: "새 요약 생성 한도 초과. code `RATE_LIMITED`"
+      description: "새 요약 생성 한도 초과(LLM 공급자 한도 초과 포함). code `RATE_LIMITED`"
       headers:
         Retry-After:
           description: 다시 시도할 때까지 기다릴 초
@@ -191,7 +191,7 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
     ServiceUnavailable:
-      description: "LLM API 키 미설정. code `LLM_NOT_CONFIGURED`"
+      description: "LLM API 키(`GEMINI_API_KEY`) 미설정. code `LLM_NOT_CONFIGURED`"
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

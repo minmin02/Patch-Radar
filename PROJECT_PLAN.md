@@ -88,6 +88,23 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
   - 비용 보호를 한 곳에서: 캐시, 생성 횟수 제한, 동시 요청 합치기를 summary-svc 하나에서 관리한다.
 - **감수하는 비용**: 운영할 서비스가 하나 늘어난다(이미지, 배포, 관측). LLM 호출 비용이 든다(캐시와 분당 한도로 상한을 둔다).
 - **검증**: collector-svc·release-svc 코드 변경 0으로 붙으면 이 결정과 ADR-001이 맞았다고 본다.
+- **변경**: `anthropic` SDK(Claude)는 당시 결정이다. LLM 공급자는 ADR-005로 대체됐다.
+
+### ADR-005: 요약 LLM을 Gemini 무료 등급으로 교체
+
+- **상황**: Claude API에는 무료 등급이 없어 개인 포트폴리오로 운영하기에 비용이 부담된다.
+- **결정**: summary-svc의 LLM을 **Google Gemini API 무료 등급**으로 바꾸고 Claude 연동 코드는 제거한다.
+  - 공식 `google-genai` Python SDK.
+  - 모델은 환경변수 `GEMINI_MODEL`로 정한다(기본값 Flash 계열). 키는 `GEMINI_API_KEY`.
+- **근거**:
+  - 운영 비용 0.
+  - 한국어 요약 품질이 용도에 충분하다.
+  - ADR-004에서 요약을 별도 서비스로 분리해 두었으므로 summary-svc 내부만 바뀐다. 다른 서비스 변경은 web 문구 외 0이고 API 계약(경로·스키마)도 그대로다.
+- **감수하는 비용**:
+  - 공급자의 분당·일일 요청 한도 때문에 429가 날 수 있다(`contracts/domain.md` "요약 생성").
+  - 무료 등급에서는 입력이 공급자의 모델 개선에 쓰일 수 있다. 공개 릴리스 노트만 보내므로 허용한다.
+  - 특정 공급자의 무료 정책에 종속된다. 정책이 바뀌면 다시 교체해야 한다.
+- **검증**: collector-svc·release-svc 코드 변경 0으로 교체되면 이 결정과 ADR-004가 맞았다고 본다.
 
 ---
 
@@ -106,7 +123,7 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
                                                               web (한 화면)
                                                                    │ 요약 요청 (/api/releases/{id}/summary)
                                                         ┌──────────▼───────────────┐
-         release-svc 공개 API ◄── GET /api/releases/{id} ┤ summary-svc :8082        ├──► Claude API
+         release-svc 공개 API ◄── GET /api/releases/{id} ┤ summary-svc :8082        ├──► Gemini API
                                                         │ (Python) 요약·캐시·한도    │
                                                         └──────────────────────────┘
                                                               [summary 스키마]
@@ -118,7 +135,7 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
 |---|---|---|
 | collector-svc | 소스별 스케줄 폴링, 버전 파싱·필터, 중복 제거, 본문 수집, `release.detected` 발행 | `collector.source`, `collector.fetch_state`(ETag, 마지막 확인 시각) |
 | release-svc | 이벤트 소비 → 멱등 저장, 목록·필터·검색·상세 REST, 새 릴리스 SSE | `release.release` |
-| summary-svc (포트 8082) | 온디맨드 핵심요약: release-svc 공개 API로 릴리스 조회 → Claude API로 한국어 요약 → 캐시, 생성 횟수 제한 | `summary` 스키마 |
+| summary-svc (포트 8082) | 온디맨드 핵심요약: release-svc 공개 API로 릴리스 조회 → Gemini API로 한국어 요약 → 캐시, 생성 횟수 제한 | `summary` 스키마 |
 | web | 한 화면: 도구 탭·필터, 타임라인 목록, 상세(본문 Markdown 렌더링, 핵심요약), 실시간 반영 | 없음 |
 
 **규칙**
@@ -191,7 +208,7 @@ docs/adr/   collector-svc/   release-svc/                    계약 준수·테�
 | release-dev | `services/release-svc/` | 경량 | Read, Edit, Write, Bash |
 | web-dev | `web/` (계약 기반 목 API로 먼저 개발) | 경량 | Read, Edit, Write, Bash |
 | reviewer | 전체 읽기 전용, 테스트 실행 | 상위 | Read, Grep, Glob, Bash |
-| summary-dev | `services/summary-svc/` (Python, Claude API). 테스트에서 실제 API 호출 금지 | 경량 | Read, Edit, Write, Bash |
+| summary-dev | `services/summary-svc/` (Python, Gemini API). 테스트에서 실제 API 호출 금지 | 경량 | Read, Edit, Write, Bash |
 
 ### 설정 파일
 
@@ -258,7 +275,7 @@ M1과 M2는 계약을 기준으로 병렬 진행한다(collector-dev, release-de
 
 ## 8. 확장 과제: LLM 분석 파이프라인 (요약)
 
-- **구현됨**: 온디맨드 한국어 핵심요약(summary-svc, ADR-004). 사용자가 요청할 때만 생성하고 캐시한다. 규칙은 `contracts/domain.md` "요약 생성".
+- **구현됨**: 온디맨드 한국어 핵심요약(summary-svc, ADR-004, LLM은 Gemini 무료 등급: ADR-005). 사용자가 요청할 때만 생성하고 캐시한다. 규칙은 `contracts/domain.md` "요약 생성".
 - **나머지는 확장 과제**: 아래 파이프라인은 아직 구현하지 않았다.
 - **analysis-svc** (Python): `release.detected` 구독 → 분석 → `release.analyzed` 발행 → release-svc가 화면에 반영.
 - **파이프라인 후보**:
