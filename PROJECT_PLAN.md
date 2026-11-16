@@ -95,7 +95,7 @@ DevOpsit이 연동하는 외부 OSS(GitLab, Jenkins, ArgoCD 등)의 **공식 패
 - **상황**: Claude API에는 무료 등급이 없어 개인 포트폴리오로 운영하기에 비용이 부담된다.
 - **결정**: summary-svc의 LLM을 **Google Gemini API 무료 등급**으로 바꾸고 Claude 연동 코드는 제거한다.
   - 공식 `google-genai` Python SDK.
-  - 모델은 환경변수 `GEMINI_MODEL`로 정한다(기본값 Flash 계열). 키는 `GEMINI_API_KEY`.
+  - 모델은 환경변수 `GEMINI_MODEL`로 정한다(기본값 `gemini-3.5-flash`). 키는 `GEMINI_API_KEY`.
 - **근거**:
   - 운영 비용 0.
   - 한국어 요약 품질이 용도에 충분하다.

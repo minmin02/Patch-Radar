@@ -156,7 +156,7 @@ components:
       properties:
         releaseId: { type: integer, format: int64 }
         summary: { type: string, description: 한국어 Markdown. 섹션 형식은 contracts/domain.md }
-        model: { type: string, examples: [gemini-2.5-flash] }
+        model: { type: string, examples: [gemini-3.5-flash] }
         cached: { type: boolean, description: 캐시에서 반환했으면 true, 이번 요청에서 생성했으면 false }
         createdAt: { type: string, format: date-time, description: 요약 생성 시각 }
     Error:

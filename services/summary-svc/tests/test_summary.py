@@ -98,7 +98,7 @@ def test_miss_then_cached(client, llm):
     assert call["model"] == main.MODEL
     assert call["contents"] == main.build_user_content(RELEASES[rid])
     assert call["config"].system_instruction == main.SYSTEM_PROMPT
-    assert call["config"].max_output_tokens == 8192
+    assert call["config"].max_output_tokens == 32768
 
 
 def test_body_change_regenerates(client, llm):
@@ -144,6 +144,26 @@ def test_blocked_or_empty_502(client, llm, resp):
     llm.response = resp
     r = client.post(f"/api/releases/{release(5)}/summary")
     assert r.status_code == 502 and r.json()["code"] == "LLM_FAILED"
+
+
+def test_max_tokens_502_not_saved(client, llm):
+    llm.response = ok_response(text="## 핵심 요약\n- 잘린", finish=types.FinishReason.MAX_TOKENS)
+    rid = release(12)
+    r = client.post(f"/api/releases/{rid}/summary")
+    assert r.status_code == 502 and r.json()["code"] == "LLM_FAILED"
+    with psycopg.connect(main.DB_CONNINFO) as conn:
+        assert conn.execute("SELECT count(*) FROM summary.summary WHERE release_id=%s", (rid,)).fetchone() == (0,)
+    assert client.get(f"/api/releases/{rid}/summary").status_code == 404
+
+
+def test_default_model(monkeypatch):
+    import importlib
+    monkeypatch.setenv("GEMINI_MODEL", "")
+    try:
+        assert importlib.reload(main).MODEL == "gemini-3.5-flash"
+    finally:
+        monkeypatch.delenv("GEMINI_MODEL")
+        importlib.reload(main)
 
 
 @pytest.mark.parametrize("retry_delay,expected", [("37.2s", "38"), (None, "60"), ("0.1s", "1")])
@@ -236,14 +256,20 @@ def test_release_svc_bad_json_502(monkeypatch):
 
 def test_prompt_has_per_version_section():
     assert "## 버전별 변경" in main.SYSTEM_PROMPT and "둘 이상" in main.SYSTEM_PROMPT
-    assert main.PROMPT_VERSION == "v2"
+    assert main.PROMPT_VERSION == "v3"
 
 
-def test_v1_row_ignored_then_v2_saved(client, llm):
+def test_prompt_accuracy_rules():
+    p = main.SYSTEM_PROMPT
+    assert "번역하지 말고 원문 영어 문장을 그대로 따옴표로 인용" in p
+    assert "모든 버전에 똑같이 나열된 항목만" in p and "빠뜨리지 않는다" in p
+
+
+def test_old_row_ignored_then_v3_saved(client, llm):
     rid = release(20)
     with psycopg.connect(main.DB_CONNINFO, autocommit=True) as conn:
         conn.execute(
-            "INSERT INTO summary.summary (release_id, content_hash, prompt_version, summary, model) VALUES (%s,%s,'v1','old','m')",
+            "INSERT INTO summary.summary (release_id, content_hash, prompt_version, summary, model) VALUES (%s,%s,'v2','old','m')",
             (rid, main.content_hash(RELEASES[rid])))
     r = client.get(f"/api/releases/{rid}/summary")
     assert r.status_code == 404 and r.json()["code"] == "SUMMARY_NOT_FOUND"
@@ -251,7 +277,7 @@ def test_v1_row_ignored_then_v2_saved(client, llm):
     assert r.status_code == 200 and r.json()["cached"] is False and len(llm.calls) == 1
     with psycopg.connect(main.DB_CONNINFO) as conn:
         rows = conn.execute("SELECT prompt_version FROM summary.summary WHERE release_id=%s ORDER BY 1", (rid,)).fetchall()
-    assert rows == [("v1",), ("v2",)]
+    assert rows == [("v2",), ("v3",)]
 
 
 def test_init_db_migrates_v1_schema():
