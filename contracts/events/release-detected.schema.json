@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/minmin02/Patch-Radar/contracts/events/release-detected.schema.json",
+  "title": "release.detected",
+  "description": "collector-svc가 새 릴리스(또는 내용이 바뀐 릴리스)를 발견하면 발행. Redis Stream 'release.detected'에 필드 'payload'로 JSON 문자열을 넣는다. 소비자는 (tool, releaseKey)로 멱등 처리.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "occurredAt", "tool", "releaseKey", "version", "title", "url", "publishedAt", "body", "bodyFormat", "security", "source"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "tool": {
+      "enum": ["gitlab", "gitea", "jenkins", "sonarqube", "harbor", "argocd", "dependency-track", "k3s", "kubernetes"]
+    },
+    "releaseKey": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "version": { "type": ["string", "null"], "maxLength": 64 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "url": { "type": "string", "format": "uri" },
+    "publishedAt": { "type": "string", "format": "date-time" },
+    "body": { "type": ["string", "null"], "maxLength": 200000 },
+    "bodyFormat": { "enum": ["markdown", "html", "text", null] },
+    "security": { "type": "boolean" },
+    "source": { "enum": ["github", "rss"] }
+  },
+  "examples": [
+    {
+      "eventId": "3f1c2b9e-8a4d-4c1e-9b7a-2d5e6f7a8b9c",
+      "occurredAt": "2026-11-16T01:20:00Z",
+      "tool": "argocd",
+      "releaseKey": "v3.6.1",
+      "version": "3.6.1",
+      "title": "v3.6.1",
+      "url": "https://github.com/argoproj/argo-cd/releases/tag/v3.6.1",
+      "publishedAt": "2026-11-10T12:00:00Z",
+      "body": "## What's Changed\n...",
+      "bodyFormat": "markdown",
+      "security": false,
+      "source": "github"
+    }
+  ]
+}
