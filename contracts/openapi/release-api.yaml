@@ -33,7 +33,7 @@ paths:
           explode: true
         - { name: from, in: query, description: publishedAt 이상, schema: { type: string, format: date-time } }
         - { name: to, in: query, description: publishedAt 미만, schema: { type: string, format: date-time } }
-        - { name: q, in: query, description: 제목·본문 검색어, schema: { type: string, maxLength: 100 } }
+        - { name: q, in: query, description: "검색어. 앞뒤 공백은 무시(공백뿐이면 필터 없음). 제목과 본문 텍스트(HTML 태그 제외)에서 대소문자 무시 부분일치", schema: { type: string, maxLength: 100 } }
         - { name: security, in: query, description: true면 보안 관련만, schema: { type: boolean } }
         - { name: page, in: query, schema: { type: integer, minimum: 0, default: 0 } }
         - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }

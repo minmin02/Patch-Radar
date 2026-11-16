@@ -74,6 +74,7 @@ public class ReleaseController {
         if (size < 1 || size > 100) {
             throw new BadRequest("size must be between 1 and 100");
         }
+        q = q == null ? null : q.strip();
         if (q != null && q.length() > 100) {
             throw new BadRequest("q must be at most 100 characters");
         }

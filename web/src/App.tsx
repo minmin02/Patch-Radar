@@ -32,7 +32,7 @@ const readUrl = (): ReleaseQuery => {
   const p = new URLSearchParams(location.search)
   return {
     tools: p.getAll('tool') as ToolId[],
-    q: p.get('q') ?? '',
+    q: (p.get('q') ?? '').trim(),
     from: p.get('from') ?? '',
     to: p.get('to') ?? '',
     security: p.get('security') === 'true',
@@ -91,7 +91,8 @@ export default function App() {
 
   // 검색어 디바운스
   useEffect(() => {
-    const t = setTimeout(() => setFilter((f) => (f.q === qInput ? f : { ...f, q: qInput })), 300)
+    const q = qInput.trim()
+    const t = setTimeout(() => setFilter((f) => (f.q === q ? f : { ...f, q })), 300)
     return () => clearTimeout(t)
   }, [qInput])
 

@@ -187,6 +187,23 @@ class ReleaseSvcTests {
     }
 
     @Test
+    void searchIgnoresHtmlMarkupAndTrimsQuery() throws Exception {
+        send(event("argocd", "h1", "HTML", "<p class=\"x\"><strong>Fix</strong> sync bug</p>", false,
+                "2026-11-01T00:00:00Z"));
+        send(event("argocd", "h2", "Ent", "A &amp; B &lt;ok&gt;", false, "2026-11-02T00:00:00Z"));
+        await(() -> count() == 2);
+
+        for (String q : new String[] {"strong", "class", "p"}) {
+            assertEquals(0, getJson("/api/releases?q=" + q).get("total").asInt(), q);
+        }
+        assertEquals(1, getJson("/api/releases?q=sync").get("total").asInt());
+        assertEquals(1, getJson("/api/releases?q=%20%20sync%20%20").get("total").asInt());
+        assertEquals(2, getJson("/api/releases?q=%20%20%20").get("total").asInt());
+        assertEquals(1, getJson("/api/releases?q=A%20%26%20B").get("total").asInt());
+        assertEquals(1, getJson("/api/releases?q=%3Cok%3E").get("total").asInt());
+    }
+
+    @Test
     void errors() throws Exception {
         for (String bad : new String[] {"tool=nope", "size=101", "size=0", "page=-1", "from=yesterday", "to=x",
                 "security=maybe", "size=abc"}) {

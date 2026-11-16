@@ -90,8 +90,7 @@ public class ReleaseStore {
         }
         if (f.q() != null && !f.q().isEmpty()) {
             String like = "%" + f.q().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
-            conds.add("(title ILIKE ? OR body ILIKE ?)");
-            params.add(like);
+            conds.add("search_text ILIKE ?");
             params.add(like);
         }
         if (Boolean.TRUE.equals(f.security())) {
