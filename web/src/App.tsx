@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ApiError, createSummary, dateRange, getRelease, getSummary, listReleases, listTools,
+  ApiError, createSummary, /* dateRange, SSE 비활성화(ADR-006) */ getRelease, getSummary, listReleases, listTools,
   type Release, type ReleaseQuery, type ReleaseSummary, type Summary, type Tool, type ToolId,
 } from './api'
 
@@ -60,18 +60,19 @@ function relTime(iso: string) {
   return rtf.format(Math.trunc(sec), 'second')
 }
 
-// SSE 로 받은 항목이 현재 필터에 맞는지. q 는 본문을 모르므로 제목·버전만 검사한다
-// ponytail: 본문에만 q가 있는 신규 항목은 실시간 추가에서 빠짐, 새로고침하면 나타남
-function matches(r: ReleaseSummary, f: ReleaseQuery) {
-  if (f.tools.length && !f.tools.includes(r.tool)) return false
-  if (f.security && !r.security) return false
-  const { from, to } = dateRange(f)
-  const t = new Date(r.publishedAt)
-  if (from && t < from) return false
-  if (to && t >= to) return false
-  if (f.q && !`${r.title} ${r.version ?? ''}`.toLowerCase().includes(f.q.toLowerCase())) return false
-  return true
-}
+// SSE 비활성화(ADR-006): 실시간 수신을 끄는 동안 미사용
+// // SSE 로 받은 항목이 현재 필터에 맞는지. q 는 본문을 모르므로 제목·버전만 검사한다
+// // ponytail: 본문에만 q가 있는 신규 항목은 실시간 추가에서 빠짐, 새로고침하면 나타남
+// function matches(r: ReleaseSummary, f: ReleaseQuery) {
+//   if (f.tools.length && !f.tools.includes(r.tool)) return false
+//   if (f.security && !r.security) return false
+//   const { from, to } = dateRange(f)
+//   const t = new Date(r.publishedAt)
+//   if (from && t < from) return false
+//   if (to && t >= to) return false
+//   if (f.q && !`${r.title} ${r.version ?? ''}`.toLowerCase().includes(f.q.toLowerCase())) return false
+//   return true
+// }
 
 // 한 공지에 여러 버전이 든 제목(예: "... Patch Release: 19.5.1, 19.4.3")에서 버전을 원문 순서대로 추출
 const versionsIn = (title: string) => [...new Set(title.match(/\d+(?:\.\d+){1,3}(?:\+[\w.]+)?/g) ?? [])]
@@ -103,8 +104,8 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState<number | null>(null)
-  const [fresh, setFresh] = useState<Set<number>>(new Set())
-  const [live, setLive] = useState(false)
+  const [fresh /* , setFresh */] = useState<Set<number>>(new Set()) // SSE 비활성화(ADR-006)
+  // const [live, setLive] = useState(false) // SSE 비활성화(ADR-006)
   const filterRef = useRef(filter)
   const itemsRef = useRef(items)
 
@@ -159,31 +160,32 @@ export default function App() {
     setFilter((f) => ({ ...f, ...patch }))
   }
 
-  // 실시간 수신. 연결 끊기면 EventSource가 알아서 재연결
-  useEffect(() => {
-    const es = new EventSource('/api/releases/stream')
-    es.onopen = () => setLive(true)
-    es.onerror = () => setLive(false)
-    es.addEventListener('release', (e) => {
-      let r: ReleaseSummary
-      try {
-        r = JSON.parse((e as MessageEvent).data)
-      } catch {
-        return
-      }
-      setTools((ts) =>
-        ts.map((t) => (t.id === r.tool && (!t.latest || r.publishedAt > t.latest.publishedAt) ? { ...t, latest: r } : t)),
-      )
-      if (!matches(r, filterRef.current)) return
-      if (itemsRef.current.some((p) => p.id === r.id)) return
-      itemsRef.current = [r, ...itemsRef.current]
-      setItems(itemsRef.current)
-      setTotal((n) => n + 1)
-      setFresh((s) => new Set(s).add(r.id))
-      setTimeout(() => setFresh((s) => { const n = new Set(s); n.delete(r.id); return n }), 3000)
-    })
-    return () => es.close()
-  }, [])
+  // SSE 비활성화(ADR-006): 무료 인프라(Render)는 서비스가 잠들고 수집이 3시간 주기라 실시간 수신을 끈다. 상시 가동 인프라로 옮기면 주석을 푼다
+  // // 실시간 수신. 연결 끊기면 EventSource가 알아서 재연결
+  // useEffect(() => {
+  //   const es = new EventSource('/api/releases/stream')
+  //   es.onopen = () => setLive(true)
+  //   es.onerror = () => setLive(false)
+  //   es.addEventListener('release', (e) => {
+  //     let r: ReleaseSummary
+  //     try {
+  //       r = JSON.parse((e as MessageEvent).data)
+  //     } catch {
+  //       return
+  //     }
+  //     setTools((ts) =>
+  //       ts.map((t) => (t.id === r.tool && (!t.latest || r.publishedAt > t.latest.publishedAt) ? { ...t, latest: r } : t)),
+  //     )
+  //     if (!matches(r, filterRef.current)) return
+  //     if (itemsRef.current.some((p) => p.id === r.id)) return
+  //     itemsRef.current = [r, ...itemsRef.current]
+  //     setItems(itemsRef.current)
+  //     setTotal((n) => n + 1)
+  //     setFresh((s) => new Set(s).add(r.id))
+  //     setTimeout(() => setFresh((s) => { const n = new Set(s); n.delete(r.id); return n }), 3000)
+  //   })
+  //   return () => es.close()
+  // }, [])
 
   const toolName = useMemo(() => new Map(tools.map((t) => [t.id, t.name])), [tools])
   const categories = useMemo(() => {
@@ -200,7 +202,8 @@ export default function App() {
       <header>
         <h1>
           Patch Radar{' '}
-          <span className={`dot${live ? ' on' : ''}`} role="status" aria-label={live ? '실시간 연결됨' : '실시간 연결 끊김'} title={live ? '실시간 연결됨' : '연결 끊김, 재연결 중'} />
+          {/* SSE 비활성화(ADR-006) */}
+          {/* <span className={`dot${live ? ' on' : ''}`} role="status" aria-label={live ? '실시간 연결됨' : '실시간 연결 끊김'} title={live ? '실시간 연결됨' : '연결 끊김, 재연결 중'} /> */}
         </h1>
         <p>DevOps OSS 공식 패치 뉴스를 한 화면에서.</p>
       </header>
