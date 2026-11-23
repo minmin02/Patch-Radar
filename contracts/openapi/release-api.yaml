@@ -96,8 +96,9 @@ paths:
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/releases/stream:
     get:
-      summary: 새로 저장된 릴리스 실시간 push (SSE)
-      description: "이벤트 이름 `release`, data는 ReleaseSummary JSON. 30초마다 주석 줄(`: ping`)로 연결 유지."
+      summary: 새로 저장된 릴리스 실시간 push (SSE, 비활성화)
+      description: "ADR-006으로 비활성화, 현재 404. 다시 켜면: 이벤트 이름 `release`, data는 ReleaseSummary JSON. 30초마다 주석 줄(`: ping`)로 연결 유지."
+      deprecated: true
       operationId: streamReleases
       responses:
         "200":
