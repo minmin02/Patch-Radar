@@ -1,0 +1,92 @@
+# Render Blueprint: 무료 배포(ADR-006). DB는 Neon, Redis는 Upstash(외부), 수집은 .github/workflows/wake.yml이 3시간마다 깨운다.
+# 비밀값(sync: false)은 Blueprint 생성 시 대시보드에서 입력한다. 저장소에 넣지 않는다.
+# 서비스 URL은 https://<name>.onrender.com 으로 가정한다. 이름이 이미 쓰여 다른 URL이 배정되면
+# 아래 RELEASE_API_URL·routes와 wake.yml의 주소를 실제 URL로 바꾼다.
+
+# JAVA_TOOL_OPTIONS: 무료 인스턴스 512MB. JVM 기본 25%면 힙이 128MB라 부족해 75%로 올린다
+
+services:
+  - type: web
+    name: patchradar-collector
+    runtime: docker
+    plan: free
+    rootDir: services/collector-svc
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: "8081"
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75
+      - key: SPRING_DATASOURCE_URL   # jdbc:postgresql://<neon-host>/<db>?sslmode=require&currentSchema=collector
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: SPRING_DATA_REDIS_URL   # rediss://default:<password>@<upstash-host>:6379
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+
+  - type: web
+    name: patchradar-release
+    runtime: docker
+    plan: free
+    rootDir: services/release-svc
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75
+      - key: SPRING_DATASOURCE_URL   # ...?sslmode=require&currentSchema=release
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: SPRING_DATA_REDIS_URL
+        sync: false
+
+  - type: web
+    name: patchradar-summary
+    runtime: docker
+    plan: free
+    rootDir: services/summary-svc
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: "8082"
+      - key: RELEASE_API_URL
+        value: https://patchradar-release.onrender.com
+      - key: PGSSLMODE   # libpq가 읽는다. Neon은 TLS 필수
+        value: require
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: patchradar-web
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:   # 위에서부터 먼저 맞는 규칙 적용. nginx.conf의 라우팅과 같은 순서
+      - type: rewrite
+        source: /api/releases/*/summary
+        destination: https://patchradar-summary.onrender.com/api/releases/*/summary
+      - type: rewrite
+        source: /api/*
+        destination: https://patchradar-release.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html

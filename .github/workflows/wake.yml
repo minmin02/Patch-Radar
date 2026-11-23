@@ -1,0 +1,24 @@
+# 무료 인프라(ADR-006): Render 무료 서비스는 15분 요청이 없으면 잠든다.
+# 3시간마다 collector(깨어나면 5초 뒤 수집 → release.detected 발행)와 release(쌓인 이벤트 소비)를 깨운다.
+# 주의: 공개 저장소에 60일 활동이 없으면 GitHub가 예약 실행을 끈다. Actions 탭에서 다시 켠다.
+name: Wake
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        url:
+          - https://patchradar-collector.onrender.com/actuator/health
+          - https://patchradar-release.onrender.com/actuator/health
+    steps:
+      # 콜드 스타트(Spring Boot)가 1분 넘게 걸릴 수 있어 재시도와 타임아웃을 넉넉히 둔다
+      - run: curl -fsS --retry 6 --retry-delay 20 --retry-all-errors --max-time 120 "${{ matrix.url }}"
