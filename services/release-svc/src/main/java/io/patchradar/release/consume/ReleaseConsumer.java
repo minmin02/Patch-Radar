@@ -145,7 +145,7 @@ public class ReleaseConsumer {
         failures.remove(record.getId().getValue());
         redis.opsForStream().acknowledge(key, GROUP, record.getId());
         if (result.inserted()) {
-            hub.publish(result.release().summary());
+            hub.publish(result.release().summary()); // SSE 비활성화(ADR-006) 동안 구독자가 없어 아무 일도 안 함
         }
     }
 

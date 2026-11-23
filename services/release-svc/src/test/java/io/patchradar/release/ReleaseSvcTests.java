@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -218,6 +219,7 @@ class ReleaseSvcTests {
     }
 
     @Test
+    @Disabled("SSE 비활성화(ADR-006): 무료 인프라에서 /api/releases/stream 주석 처리. 다시 켤 때 이 줄을 지운다")
     void sseOnlyNewInserts() throws Exception {
         var resp = http.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/releases/stream"))
                 .build(), HttpResponse.BodyHandlers.ofInputStream());

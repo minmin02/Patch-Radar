@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+// import org.springframework.http.MediaType; // SSE 비활성화(ADR-006)
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+// import org.springframework.web.servlet.mvc.method.annotation.SseEmitter; // SSE 비활성화(ADR-006)
 
 import io.patchradar.release.store.Release;
 import io.patchradar.release.store.ReleaseStore;
@@ -38,7 +38,7 @@ public class ReleaseController {
     }
 
     private final ReleaseStore store;
-    private final SseHub hub;
+    private final SseHub hub; // SSE 비활성화(ADR-006) 동안 미사용. 다시 켤 때 그대로 쓴다
 
     public ReleaseController(ReleaseStore store, SseHub hub) {
         this.store = store;
@@ -90,10 +90,12 @@ public class ReleaseController {
                         .body(new Error("NOT_FOUND", "release not found: " + id)));
     }
 
-    @GetMapping(value = "/api/releases/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    SseEmitter stream() {
-        return hub.subscribe();
-    }
+    // SSE 비활성화(ADR-006): 무료 인프라(Render)는 서비스가 잠들고 수집이 3시간 주기라 실시간 push가 의미 없고,
+    // 연결 유지가 인스턴스 시간 한도를 소모한다. 상시 가동 인프라로 옮기면 주석을 풀어 다시 켠다.
+    // @GetMapping(value = "/api/releases/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    // SseEmitter stream() {
+    //     return hub.subscribe();
+    // }
 
     private static Instant instant(String name, String value) {
         if (value == null) {
