@@ -10,6 +10,7 @@ services:
     name: patchradar-collector
     runtime: docker
     plan: free
+    region: ohio   # Neon·Upstash와 같은 us-east-2
     rootDir: services/collector-svc
     healthCheckPath: /actuator/health
     envVars:
@@ -32,6 +33,7 @@ services:
     name: patchradar-release
     runtime: docker
     plan: free
+    region: ohio   # Neon·Upstash와 같은 us-east-2
     rootDir: services/release-svc
     healthCheckPath: /actuator/health
     envVars:
@@ -52,6 +54,7 @@ services:
     name: patchradar-summary
     runtime: docker
     plan: free
+    region: ohio   # Neon·Upstash와 같은 us-east-2
     rootDir: services/summary-svc
     healthCheckPath: /actuator/health
     envVars:
