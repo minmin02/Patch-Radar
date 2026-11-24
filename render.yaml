@@ -18,6 +18,8 @@ services:
         value: "8081"
       - key: JAVA_TOOL_OPTIONS
         value: -XX:MaxRAMPercentage=75
+      - key: SPRING_DATASOURCE_HIKARI_CONNECTIONINITSQL   # Neon 프록시가 JDBC currentSchema(search_path 시작 파라미터)를 반영하지 않아 연결마다 지정
+        value: SET search_path TO collector
       - key: SPRING_DATASOURCE_URL   # jdbc:postgresql://<neon-host>/<db>?sslmode=require&currentSchema=collector
         sync: false
       - key: DB_USER
@@ -41,6 +43,8 @@ services:
         value: "8080"
       - key: JAVA_TOOL_OPTIONS
         value: -XX:MaxRAMPercentage=75
+      - key: SPRING_DATASOURCE_HIKARI_CONNECTIONINITSQL   # Neon 프록시가 JDBC currentSchema(search_path 시작 파라미터)를 반영하지 않아 연결마다 지정
+        value: SET search_path TO release
       - key: SPRING_DATASOURCE_URL   # ...?sslmode=require&currentSchema=release
         sync: false
       - key: DB_USER
